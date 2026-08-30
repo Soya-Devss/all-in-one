@@ -82,6 +82,12 @@ public class UpdateService {
             return;
         }
 
+        String cleanRepo = repo.trim()
+                .replaceFirst("^https?://github\\.com/", "")
+                .replaceFirst("\\.git$", "")
+                .replaceAll("^/+", "")
+                .replaceAll("/+$", "");
+
         try {
             HttpClient client = HttpClient.newBuilder()
                     .followRedirects(HttpClient.Redirect.NORMAL)
@@ -89,7 +95,7 @@ public class UpdateService {
                     .build();
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.github.com/repos/" + repo + "/releases/latest"))
+                    .uri(URI.create("https://api.github.com/repos/" + cleanRepo + "/releases/latest"))
                     .header("User-Agent", "All-In-One-Lavalink-Plugin")
                     .header("Accept", "application/vnd.github.v3+json")
                     .GET()
