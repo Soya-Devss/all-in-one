@@ -14,6 +14,9 @@ public class AllInOneConfig {
     private boolean autoUpdate = true;
     private String repository = "Soya-Devss/all-in-one";
     private String gitBranch = "main";
+    private String gaanaApiUrl = "https://gaana-api-2.vercel.app/api";
+    private String gaanaProxy = null;
+    private String pandoraProxy = null;
 
     private String[] providers = {
             "ytmsearch:\"%ISRC%\"",
@@ -77,6 +80,30 @@ public class AllInOneConfig {
 
     public void setGitBranch(String gitBranch) {
         this.gitBranch = gitBranch;
+    }
+
+    public String getGaanaApiUrl() {
+        return gaanaApiUrl;
+    }
+
+    public void setGaanaApiUrl(String gaanaApiUrl) {
+        this.gaanaApiUrl = gaanaApiUrl;
+    }
+
+    public String getGaanaProxy() {
+        return gaanaProxy;
+    }
+
+    public void setGaanaProxy(String gaanaProxy) {
+        this.gaanaProxy = gaanaProxy;
+    }
+
+    public String getPandoraProxy() {
+        return pandoraProxy;
+    }
+
+    public void setPandoraProxy(String pandoraProxy) {
+        this.pandoraProxy = pandoraProxy;
     }
 
     public String[] getProviders() {

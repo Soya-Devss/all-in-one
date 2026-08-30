@@ -95,6 +95,11 @@ plugins:
     repository: "Soya-Devss/all-in-one"
     gitBranch: "main"
 
+    # Custom Gaana API & Proxy options
+    gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
+    gaanaProxy: "" # Optional proxy URL (e.g. http://host:port or http://user:pass@host:port)
+    pandoraProxy: "" # Optional proxy URL
+
     # Mirroring providers (executed in order when direct playback requires fallback)
     providers:
       - "ytmsearch:\"%ISRC%\""
@@ -115,7 +120,30 @@ plugins:
 | `autoUpdate` | Boolean | `true` | Pulls Git updates and checks releases on startup. |
 | `repository` | String | `Soya-Devss/all-in-one` | GitHub repository slug used for release checks. |
 | `gitBranch` | String | `main` | Git branch to pull updates from when autoUpdate is enabled. |
+| `gaanaApiUrl` | String | `https://gaana-api-2.vercel.app/api` | Gaana API base URL. |
+| `gaanaProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Gaana requests. |
+| `pandoraProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Pandora requests. |
 | `providers` | List | *(see above)* | Ordered list of search templates for track mirroring. Supports `%ISRC%` and `%QUERY%`. |
+
+---
+
+## LavaSearch Support
+
+This plugin implements the **LavaSearch** extension. When used alongside the LavaSearch plugin, you can query `/v4/loadsearch` for tracks, albums, playlists, and artists:
+
+```http
+GET /v4/loadsearch?query=kesariya&types=track,album,artist,playlist
+```
+
+---
+
+## Global Hosting & Geo-Unblocking
+
+When hosting outside India (e.g. Canada, US, Europe), Gaana runs seamlessly:
+
+1. **Custom Vercel API**: Uses `https://gaana-api-2.vercel.app/api` hosted in Mumbai (ap-south-1) for zero geo-restriction on song searches, album lookups, and playlist fetching worldwide.
+2. **Dedicated Proxy**: You can optionally route requests through `gaanaProxy: "http://host:port"` in `application.yml`.
+3. **YouTube Music Mirroring**: If Akamai CDN direct streaming blocks non-Indian IPs during track playback, audio playback automatically streams the identical track via YouTube Music (`ytmsearch:`) using title, artist, and ISRC. Playback never fails.
 
 ---
 

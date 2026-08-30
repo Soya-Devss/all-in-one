@@ -3,6 +3,8 @@ package com.github.allinone;
 import com.github.allinone.sources.audiomack.AudiomackAudioSourceManager;
 import com.github.allinone.sources.gaana.GaanaAudioSourceManager;
 import com.github.allinone.sources.pandora.PandoraAudioSourceManager;
+import com.github.topi314.lavasearch.SearchManager;
+import com.github.topi314.lavasearch.api.SearchManagerConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import dev.arbjerg.lavalink.api.AudioPlayerManagerConfiguration;
 import org.jetbrains.annotations.NotNull;
@@ -11,11 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AllInOnePlugin implements AudioPlayerManagerConfiguration {
+public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchManagerConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(AllInOnePlugin.class);
 
     private final AllInOneConfig config;
+    private AudiomackAudioSourceManager audiomack;
+    private GaanaAudioSourceManager gaana;
+    private PandoraAudioSourceManager pandora;
 
     public AllInOnePlugin(AllInOneConfig config) {
         this.config = config;
@@ -38,17 +43,40 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration {
 
         if (config.isAudiomack()) {
             log.info("Registering Audiomack audio source manager...");
-            manager.registerSourceManager(new AudiomackAudioSourceManager(config.getProviders(), manager));
+            this.audiomack = new AudiomackAudioSourceManager(config.getProviders(), manager);
+            manager.registerSourceManager(this.audiomack);
         }
 
         if (config.isGaana()) {
             log.info("Registering Gaana audio source manager...");
-            manager.registerSourceManager(new GaanaAudioSourceManager(config.getProviders(), manager));
+            this.gaana = new GaanaAudioSourceManager(config, manager);
+            manager.registerSourceManager(this.gaana);
         }
 
         if (config.isPandora()) {
             log.info("Registering Pandora audio source manager...");
-            manager.registerSourceManager(new PandoraAudioSourceManager(config.getProviders(), manager));
+            this.pandora = new PandoraAudioSourceManager(config, manager);
+            manager.registerSourceManager(this.pandora);
+        }
+
+        return manager;
+    }
+
+    @NotNull
+    @Override
+    public SearchManager configure(@NotNull SearchManager manager) {
+        if (!config.isEnabled()) {
+            return manager;
+        }
+
+        if (this.audiomack != null) {
+            manager.registerSearchManager(this.audiomack);
+        }
+        if (this.gaana != null) {
+            manager.registerSearchManager(this.gaana);
+        }
+        if (this.pandora != null) {
+            manager.registerSearchManager(this.pandora);
         }
 
         return manager;

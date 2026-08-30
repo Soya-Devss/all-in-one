@@ -12,6 +12,7 @@ import com.sedmelluq.discord.lavaplayer.tools.io.HttpInterfaceManager;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,7 +37,14 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class AudiomackAudioSourceManager implements MirroringAudioSourceManager {
+import com.github.topi314.lavasearch.AudioSearchManager;
+import com.github.topi314.lavasearch.result.AudioSearchResult;
+import com.github.topi314.lavasearch.result.BasicAudioSearchResult;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import java.util.Set;
+
+public class AudiomackAudioSourceManager implements MirroringAudioSourceManager, AudioSearchManager {
 
     private static final Logger log = LoggerFactory.getLogger(AudiomackAudioSourceManager.class);
 
@@ -62,8 +70,77 @@ public class AudiomackAudioSourceManager implements MirroringAudioSourceManager 
     }
 
     @Override
+    @NotNull
     public String getSourceName() {
         return "audiomack";
+    }
+
+    @Override
+    @Nullable
+    public AudioSearchResult loadSearch(@NotNull String query, @NotNull Set<AudioSearchResult.Type> types) {
+        try {
+            List<AudioTrack> tracks = new ArrayList<>();
+            List<AudioPlaylist> albums = new ArrayList<>();
+            List<AudioPlaylist> playlists = new ArrayList<>();
+
+            if (types.contains(AudioSearchResult.Type.TRACK)) {
+                AudioItem item = search(query);
+                if (item instanceof AudioPlaylist) {
+                    tracks.addAll(((AudioPlaylist) item).getTracks());
+                }
+            }
+
+            if (types.contains(AudioSearchResult.Type.ALBUM)) {
+                try {
+                    Map<String, String> params = new TreeMap<>();
+                    params.put("q", query);
+                    params.put("show", "albums");
+                    params.put("limit", "10");
+                    String signedUrl = buildSignedUrl("GET", API_BASE + "/search", params);
+                    String response = HttpHelper.get(signedUrl, Collections.emptyMap());
+                    JSONObject json = new JSONObject(response);
+                    JSONArray results = json.optJSONArray("results");
+                    if (results != null) {
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject albumObj = results.getJSONObject(i);
+                            String title = albumObj.optString("title", "Album");
+                            albums.add(new AudiomackAudioPlaylist(title, Collections.emptyList(), null, false));
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (types.contains(AudioSearchResult.Type.PLAYLIST)) {
+                try {
+                    Map<String, String> params = new TreeMap<>();
+                    params.put("q", query);
+                    params.put("show", "playlists");
+                    params.put("limit", "10");
+                    String signedUrl = buildSignedUrl("GET", API_BASE + "/search", params);
+                    String response = HttpHelper.get(signedUrl, Collections.emptyMap());
+                    JSONObject json = new JSONObject(response);
+                    JSONArray results = json.optJSONArray("results");
+                    if (results != null) {
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject playlistObj = results.getJSONObject(i);
+                            String title = playlistObj.optString("title", "Playlist");
+                            playlists.add(new AudiomackAudioPlaylist(title, Collections.emptyList(), null, false));
+                        }
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (tracks.isEmpty() && albums.isEmpty() && playlists.isEmpty()) {
+                return null;
+            }
+
+            return new BasicAudioSearchResult(tracks, albums, Collections.emptyList(), playlists, Collections.emptyList());
+        } catch (Exception e) {
+            log.error("Error performing LavaSearch for Audiomack: {}", query, e);
+            return null;
+        }
     }
 
     @Override

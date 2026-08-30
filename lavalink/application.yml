@@ -46,6 +46,9 @@ plugins:
     autoUpdate: true
     repository: "Soya-Devss/all-in-one"
     gitBranch: "main"
+    gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
+    gaanaProxy: "" # Optional proxy URL (e.g. http://host:port or http://user:pass@host:port)
+    pandoraProxy: "" # Optional proxy URL
     providers:
       - "ytmsearch:\"%ISRC%\""
       - "ytmsearch:%QUERY%"
