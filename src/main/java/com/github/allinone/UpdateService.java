@@ -140,6 +140,16 @@ public class UpdateService {
                             }
                             Files.move(tempFile, targetJar.toPath(), StandardCopyOption.REPLACE_EXISTING);
                             log.info("Plugin successfully updated to {}!", name);
+
+                            File[] existingJars = pluginsDir.listFiles((d, f) -> f.startsWith("all-in-one") && f.endsWith(".jar") && !f.equals(name));
+                            if (existingJars != null) {
+                                for (File oldJar : existingJars) {
+                                    try {
+                                        Files.deleteIfExists(oldJar.toPath());
+                                        log.info("Removed outdated plugin jar: {}", oldJar.getName());
+                                    } catch (Exception ignored) {}
+                                }
+                            }
                         }
                     }
                     break;
