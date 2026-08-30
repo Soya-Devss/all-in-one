@@ -54,9 +54,9 @@ public class AudiomackAudioSourceManager implements MirroringAudioSourceManager,
     public static final String SEARCH_PREFIX_ADM = "admsearch:";
     public static final String SEARCH_PREFIX_AUDIOMACK = "audiomack:";
 
-    private static final Pattern SONG_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/([^/]+)/song/([^/?#]+)");
-    private static final Pattern ALBUM_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/([^/]+)/album/([^/?#]+)");
-    private static final Pattern PLAYLIST_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/([^/]+)/playlist/([^/?#]+)");
+    private static final Pattern SONG_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/+([^/]+)/+song/+([^/?#]+)");
+    private static final Pattern ALBUM_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/+([^/]+)/+album/+([^/?#]+)");
+    private static final Pattern PLAYLIST_PATTERN = Pattern.compile("https?://(?:www\\.)?audiomack\\.com/+([^/]+)/+playlist/+([^/?#]+)");
 
     private final MirroringAudioTrackResolver resolver;
     private final AudioPlayerManager audioPlayerManager;
@@ -160,6 +160,10 @@ public class AudiomackAudioSourceManager implements MirroringAudioSourceManager,
     @Override
     public AudioItem loadItem(AudioPlayerManager manager, AudioReference reference) {
         String identifier = reference.identifier;
+        if (identifier == null) {
+            return null;
+        }
+        identifier = identifier.trim();
 
         try {
             if (identifier.startsWith(SEARCH_PREFIX_ADM)) {
@@ -169,17 +173,20 @@ public class AudiomackAudioSourceManager implements MirroringAudioSourceManager,
                 return search(identifier.substring(SEARCH_PREFIX_AUDIOMACK.length()).trim());
             }
 
-            Matcher songMatcher = SONG_PATTERN.matcher(identifier);
+            // Normalize consecutive slashes in the path (e.g. https://audiomack.com//artist -> https://audiomack.com/artist)
+            String normalizedIdentifier = identifier.replaceAll("(?<!:)//+", "/");
+
+            Matcher songMatcher = SONG_PATTERN.matcher(normalizedIdentifier);
             if (songMatcher.find()) {
-                return getSong(songMatcher.group(1), songMatcher.group(2), identifier);
+                return getSong(songMatcher.group(1), songMatcher.group(2), normalizedIdentifier);
             }
 
-            Matcher albumMatcher = ALBUM_PATTERN.matcher(identifier);
+            Matcher albumMatcher = ALBUM_PATTERN.matcher(normalizedIdentifier);
             if (albumMatcher.find()) {
                 return getAlbum(albumMatcher.group(1), albumMatcher.group(2));
             }
 
-            Matcher playlistMatcher = PLAYLIST_PATTERN.matcher(identifier);
+            Matcher playlistMatcher = PLAYLIST_PATTERN.matcher(normalizedIdentifier);
             if (playlistMatcher.find()) {
                 return getPlaylist(playlistMatcher.group(1), playlistMatcher.group(2));
             }

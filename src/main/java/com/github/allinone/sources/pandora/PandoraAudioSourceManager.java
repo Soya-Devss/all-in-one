@@ -44,7 +44,7 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
     private static final String PANDORA_CDN_BASE = "https://content-images.p-cdn.com/";
     public static final String SEARCH_PREFIX_PD = "pdsearch:";
 
-    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:www\\.)?pandora\\.com/(playlist|station|podcast|artist)/([^/?#]+)");
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:www\\.)?pandora\\.com/+(playlist|station|podcast|artist)/+([^/?#]+)");
     private static final Pattern CSRF_COOKIE_PATTERN = Pattern.compile("csrftoken=([a-f0-9]{16})");
 
     private final AllInOneConfig config;
@@ -121,13 +121,19 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
     @Override
     public AudioItem loadItem(AudioPlayerManager manager, AudioReference reference) {
         String identifier = reference.identifier;
+        if (identifier == null) {
+            return null;
+        }
+        identifier = identifier.trim();
 
         try {
             if (identifier.startsWith(SEARCH_PREFIX_PD)) {
                 return search(identifier.substring(SEARCH_PREFIX_PD.length()).trim());
             }
 
-            Matcher matcher = URL_PATTERN.matcher(identifier);
+            String normalizedIdentifier = identifier.replaceAll("(?<!:)//+", "/");
+
+            Matcher matcher = URL_PATTERN.matcher(normalizedIdentifier);
             if (matcher.find()) {
                 String type = matcher.group(1);
                 String id = matcher.group(2);

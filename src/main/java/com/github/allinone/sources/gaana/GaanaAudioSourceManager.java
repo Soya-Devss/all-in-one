@@ -45,7 +45,7 @@ public class GaanaAudioSourceManager implements MirroringAudioSourceManager, Aud
     public static final String SEARCH_PREFIX_GN = "gnsearch:";
     public static final String SEARCH_PREFIX_GAANA = "gaanasearch:";
 
-    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:www\\.)?gaana\\.com/(song|album|playlist|artist)/([\\w-]+)");
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:www\\.)?gaana\\.com/+(song|album|playlist|artist)/+([\\w-]+)");
 
     private final AllInOneConfig config;
     private final MirroringAudioTrackResolver resolver;
@@ -82,6 +82,10 @@ public class GaanaAudioSourceManager implements MirroringAudioSourceManager, Aud
     @Override
     public AudioItem loadItem(AudioPlayerManager manager, AudioReference reference) {
         String identifier = reference.identifier;
+        if (identifier == null) {
+            return null;
+        }
+        identifier = identifier.trim();
 
         try {
             if (identifier.startsWith(SEARCH_PREFIX_GN)) {
@@ -91,13 +95,15 @@ public class GaanaAudioSourceManager implements MirroringAudioSourceManager, Aud
                 return search(identifier.substring(SEARCH_PREFIX_GAANA.length()).trim());
             }
 
-            Matcher matcher = URL_PATTERN.matcher(identifier);
+            String normalizedIdentifier = identifier.replaceAll("(?<!:)//+", "/");
+
+            Matcher matcher = URL_PATTERN.matcher(normalizedIdentifier);
             if (matcher.find()) {
                 String type = matcher.group(1);
                 String seokey = matcher.group(2);
                 switch (type) {
                     case "song":
-                        return getSong(seokey, identifier);
+                        return getSong(seokey, normalizedIdentifier);
                     case "album":
                         return getAlbum(seokey);
                     case "playlist":

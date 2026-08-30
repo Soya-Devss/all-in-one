@@ -69,10 +69,17 @@ public class HttpHelper {
                 .timeout(Duration.ofSeconds(15))
                 .GET();
 
+        boolean hasUserAgent = false;
         if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 builder.header(entry.getKey(), entry.getValue());
+                if ("user-agent".equalsIgnoreCase(entry.getKey())) {
+                    hasUserAgent = true;
+                }
             }
+        }
+        if (!hasUserAgent) {
+            builder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         }
 
         HttpResponse<String> response = getClient(proxyUrl).send(builder.build(), HttpResponse.BodyHandlers.ofString());
@@ -89,10 +96,17 @@ public class HttpHelper {
                 .timeout(Duration.ofSeconds(15))
                 .POST(HttpRequest.BodyPublishers.ofString(body != null ? body : ""));
 
+        boolean hasUserAgent = false;
         if (headers != null) {
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 builder.header(entry.getKey(), entry.getValue());
+                if ("user-agent".equalsIgnoreCase(entry.getKey())) {
+                    hasUserAgent = true;
+                }
             }
+        }
+        if (!hasUserAgent) {
+            builder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
         }
 
         HttpResponse<String> response = getClient(proxyUrl).send(builder.build(), HttpResponse.BodyHandlers.ofString());
