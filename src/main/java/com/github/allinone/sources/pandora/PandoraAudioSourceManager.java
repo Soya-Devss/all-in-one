@@ -26,8 +26,10 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +46,7 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
     private static final String PANDORA_CDN_BASE = "https://content-images.p-cdn.com/";
     public static final String SEARCH_PREFIX_PD = "pdsearch:";
 
-    private static final Pattern URL_PATTERN = Pattern.compile("https?://(?:www\\.)?pandora\\.com/+(playlist|station|podcast|artist)/+([^/?#]+)");
+    private static final Pattern URL_PATTERN = Pattern.compile("^@?(?:https?://)?(?:www\\.)?pandora\\.com/+(?:playlist/+(?<plId>PL:[\\d:]+)|artist/(?:[^/]+/)*(?<id>(?:TR|AL|AR)[A-Za-z0-9]+)|station/+(?:play/+)?(?<stId>[A-Za-z0-9:]+))(?:[?#].*)?$");
     private static final Pattern CSRF_COOKIE_PATTERN = Pattern.compile("csrftoken=([a-f0-9]{16})");
 
     private final AllInOneConfig config;
@@ -133,18 +135,47 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
 
             String normalizedIdentifier = identifier.replaceAll("(?<!:)//+", "/");
 
+            if (!normalizedIdentifier.contains("pandora.com")) {
+                return null;
+            }
+
             Matcher matcher = URL_PATTERN.matcher(normalizedIdentifier);
             if (matcher.find()) {
-                String type = matcher.group(1);
-                String id = matcher.group(2);
-                switch (type) {
-                    case "playlist":
-                        return getPlaylist(id);
-                    case "station":
-                        return getStation(id);
-                    default:
-                        break;
+                String plId = matcher.group("plId");
+                String id = matcher.group("id");
+                String stId = matcher.group("stId");
+
+                if (plId != null && !plId.isBlank()) {
+                    return getPlaylist(plId);
                 }
+                if (stId != null && !stId.isBlank()) {
+                    return getStation(stId);
+                }
+                if (id != null && !id.isBlank()) {
+                    if (id.startsWith("TR")) {
+                        return getTrack(id, normalizedIdentifier);
+                    } else if (id.startsWith("AL")) {
+                        return getAlbum(id);
+                    } else if (id.startsWith("AR")) {
+                        return getArtist(id);
+                    }
+                }
+            }
+
+            // Fallback for any other Pandora artist/album/track URL
+            if (normalizedIdentifier.contains("/artist/")) {
+                String[] parts = normalizedIdentifier.split("[?#]")[0].split("/");
+                if (parts.length > 0) {
+                    String last = parts[parts.length - 1];
+                    if (last.startsWith("TR")) {
+                        return getTrack(last, normalizedIdentifier);
+                    } else if (last.startsWith("AL")) {
+                        return getAlbum(last);
+                    } else if (last.startsWith("AR")) {
+                        return getArtist(last);
+                    }
+                }
+                return parseTrackFromUrl(normalizedIdentifier, null);
             }
         } catch (Exception e) {
             log.error("Error loading Pandora item: {}", identifier, e);
@@ -218,6 +249,187 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
         return new PandoraAudioPlaylist("Pandora Search: " + query, tracks, null, true);
     }
 
+    private AudioItem getTrack(String trackId, String originalUrl) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("pandoraId", trackId);
+
+            String response = HttpHelper.post(PANDORA_BASE_URL + "/api/v4/catalog/getDetails", body.toString(), getApiHeaders(), config.getPandoraProxy());
+            JSONObject json = new JSONObject(response);
+
+            JSONObject annotations = json.optJSONObject("annotations");
+            if (annotations != null) {
+                JSONObject trackObj = null;
+                for (String key : annotations.keySet()) {
+                    JSONObject obj = annotations.optJSONObject(key);
+                    if (obj != null && "TR".equals(obj.optString("type"))) {
+                        trackObj = obj;
+                        break;
+                    }
+                }
+                if (trackObj != null) {
+                    AudioTrack track = parseAnnotatedTrack(trackObj);
+                    if (track != null) {
+                        return track;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Pandora getDetails failed for {}: {}", trackId, e.getMessage());
+        }
+
+        if (originalUrl != null && !originalUrl.isBlank()) {
+            AudioTrack fallbackTrack = parseTrackFromUrl(originalUrl, trackId);
+            if (fallbackTrack != null) {
+                return fallbackTrack;
+            }
+        }
+
+        return AudioReference.NO_TRACK;
+    }
+
+    private AudioItem getAlbum(String albumId) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("pandoraId", albumId);
+
+            String response = HttpHelper.post(PANDORA_BASE_URL + "/api/v4/catalog/getDetails", body.toString(), getApiHeaders(), config.getPandoraProxy());
+            JSONObject json = new JSONObject(response);
+
+            JSONObject annotations = json.optJSONObject("annotations");
+            if (annotations != null) {
+                JSONObject albumObj = null;
+                for (String key : annotations.keySet()) {
+                    JSONObject obj = annotations.optJSONObject(key);
+                    if (obj != null && "AL".equals(obj.optString("type"))) {
+                        albumObj = obj;
+                        break;
+                    }
+                }
+                if (albumObj != null) {
+                    String albumTitle = albumObj.optString("name", "Pandora Album");
+                    List<AudioTrack> tracks = new ArrayList<>();
+                    JSONArray trackIds = albumObj.optJSONArray("tracks");
+                    if (trackIds != null) {
+                        for (int i = 0; i < trackIds.length(); i++) {
+                            String tid = trackIds.getString(i);
+                            JSONObject tObj = annotations.optJSONObject(tid);
+                            if (tObj != null) {
+                                AudioTrack track = parseAnnotatedTrack(tObj);
+                                if (track != null) {
+                                    tracks.add(track);
+                                }
+                            }
+                        }
+                    }
+                    if (!tracks.isEmpty()) {
+                        return new PandoraAudioPlaylist(albumTitle, tracks, null, false);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Pandora getAlbum failed for {}: {}", albumId, e.getMessage());
+        }
+        return AudioReference.NO_TRACK;
+    }
+
+    private AudioItem getArtist(String artistId) {
+        try {
+            JSONObject body = new JSONObject();
+            body.put("pandoraId", artistId);
+
+            String response = HttpHelper.post(PANDORA_BASE_URL + "/api/v4/catalog/getDetails", body.toString(), getApiHeaders(), config.getPandoraProxy());
+            JSONObject json = new JSONObject(response);
+
+            JSONObject annotations = json.optJSONObject("annotations");
+            JSONObject artistDetails = json.optJSONObject("artistDetails");
+            if (annotations != null && artistDetails != null) {
+                JSONObject artistObj = null;
+                for (String key : annotations.keySet()) {
+                    JSONObject obj = annotations.optJSONObject(key);
+                    if (obj != null && "AR".equals(obj.optString("type"))) {
+                        artistObj = obj;
+                        break;
+                    }
+                }
+                String artistName = artistObj != null ? artistObj.optString("name", "Pandora Artist") : "Pandora Artist";
+                List<AudioTrack> tracks = new ArrayList<>();
+                JSONArray topTracks = artistDetails.optJSONArray("topTracks");
+                if (topTracks != null) {
+                    for (int i = 0; i < topTracks.length(); i++) {
+                        String tid = topTracks.getString(i);
+                        JSONObject tObj = annotations.optJSONObject(tid);
+                        if (tObj != null) {
+                            AudioTrack track = parseAnnotatedTrack(tObj);
+                            if (track != null) {
+                                tracks.add(track);
+                            }
+                        }
+                    }
+                }
+                if (!tracks.isEmpty()) {
+                    return new PandoraAudioPlaylist(artistName + "'s Top Tracks", tracks, null, false);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Pandora getArtist failed for {}: {}", artistId, e.getMessage());
+        }
+        return AudioReference.NO_TRACK;
+    }
+
+    private AudioTrack parseTrackFromUrl(String url, String trackId) {
+        try {
+            URI uri = URI.create(url);
+            String path = uri.getPath();
+            String[] segments = Arrays.stream(path.split("/"))
+                    .filter(s -> !s.isBlank())
+                    .toArray(String[]::new);
+
+            if (segments.length >= 4 && "artist".equalsIgnoreCase(segments[0])) {
+                String artist = prettifySlug(segments[1]);
+                String songSlug = segments[segments.length - 2];
+                String title = prettifySlug(songSlug);
+                String album = segments.length >= 5 ? prettifySlug(segments[2]) : null;
+
+                AudioTrackInfo trackInfo = new AudioTrackInfo(
+                        title,
+                        artist,
+                        0,
+                        trackId != null ? trackId : songSlug,
+                        false,
+                        url,
+                        null,
+                        null
+                );
+
+                return new PandoraAudioTrack(
+                        trackInfo,
+                        album,
+                        null,
+                        null,
+                        null,
+                        null,
+                        false,
+                        this
+                );
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private String prettifySlug(String slug) {
+        if (slug == null || slug.isBlank()) return "Unknown";
+        String[] words = slug.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (String word : words) {
+            if (word.isBlank()) continue;
+            if (sb.length() > 0) sb.append(" ");
+            sb.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1).toLowerCase());
+        }
+        return sb.toString();
+    }
+
     private AudioItem getPlaylist(String playlistId) throws Exception {
         JSONObject body = new JSONObject();
         body.put("pandoraId", playlistId);
@@ -270,12 +482,18 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
         JSONObject body = new JSONObject();
         body.put("pandoraIds", new JSONArray(pandoraIds));
 
-        String response = HttpHelper.post(PANDORA_BASE_URL + "/api/v1/music/annotateObjects", body.toString(), getApiHeaders(), config.getPandoraProxy());
+        String response;
+        try {
+            response = HttpHelper.post(PANDORA_BASE_URL + "/api/v4/catalog/annotateObjects", body.toString(), getApiHeaders(), config.getPandoraProxy());
+        } catch (Exception e) {
+            response = HttpHelper.post(PANDORA_BASE_URL + "/api/v1/music/annotateObjects", body.toString(), getApiHeaders(), config.getPandoraProxy());
+        }
         JSONObject json = new JSONObject(response);
 
         Map<String, JSONObject> map = new HashMap<>();
-        for (String key : json.keySet()) {
-            map.put(key, json.getJSONObject(key));
+        JSONObject annotations = json.optJSONObject("annotations") != null ? json.getJSONObject("annotations") : json;
+        for (String key : annotations.keySet()) {
+            map.put(key, annotations.getJSONObject(key));
         }
         return map;
     }
@@ -287,18 +505,27 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
         }
 
         String artistName = item.optString("artistName", "Unknown Artist");
-        long duration = item.optLong("duration", 0) * 1000;
+        long duration = item.optLong("durationMillis", item.optLong("duration", 0) * 1000);
         String trackId = item.optString("pandoraId", item.optString("id", null));
-        String shareName = item.optString("shareName", trackId);
-        String uri = PANDORA_BASE_URL + "/track/" + shareName;
+        String sharePath = item.optString("shareableUrlPath", null);
+        String uri = sharePath != null ? (PANDORA_BASE_URL + sharePath) : (PANDORA_BASE_URL + "/track/" + trackId);
 
-        String iconArtId = null;
+        String artworkUrl = null;
         JSONObject iconNode = item.optJSONObject("icon");
         if (iconNode != null) {
-            iconArtId = iconNode.optString("artId", null);
+            String artUrl = iconNode.optString("artUrl", null);
+            if (artUrl != null && !artUrl.isBlank()) {
+                artworkUrl = PANDORA_CDN_BASE + artUrl;
+            } else {
+                String artId = iconNode.optString("artId", null);
+                if (artId != null && !artId.isBlank()) {
+                    artworkUrl = PANDORA_CDN_BASE + artId + "_500W_500H.jpg";
+                }
+            }
         }
-        String artworkUrl = iconArtId != null ? PANDORA_CDN_BASE + iconArtId : null;
+
         String isrc = item.optString("isrc", null);
+        String albumName = item.optString("albumName", item.optString("albumTitle", null));
 
         AudioTrackInfo trackInfo = new AudioTrackInfo(
                 name,
@@ -313,7 +540,7 @@ public class PandoraAudioSourceManager implements MirroringAudioSourceManager, A
 
         return new PandoraAudioTrack(
                 trackInfo,
-                item.optString("albumTitle", null),
+                albumName,
                 null,
                 null,
                 artworkUrl,

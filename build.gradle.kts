@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.allinone"
-version = "1.0.4"
+version = "1.0.5"
 
 lavalinkPlugin {
     name = "all-in-one-plugin"
