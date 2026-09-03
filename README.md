@@ -1,6 +1,6 @@
 # All-In-One Lavalink Plugin
 
-A comprehensive audio source plugin for **Lavalink v4**, porting high-performance support for **Audiomack**, **Gaana**, and **Pandora** directly into your Lavalink node with built-in YouTube Music mirroring.
+A comprehensive audio source plugin for **Lavalink v4**, porting high-performance support for **Audiomack**, **Gaana**, **Pandora**, and **Qobuz** directly into your Lavalink node with built-in YouTube Music mirroring.
 
 ---
 
@@ -9,6 +9,7 @@ A comprehensive audio source plugin for **Lavalink v4**, porting high-performanc
 - **Audiomack**: Official API integration with OAuth 1.0 HMAC-SHA1 signing for search (`admsearch:`, `audiomack:`), song URLs, albums, and playlists. Direct stream playback with mirror fallback.
 - **Gaana**: Full search (`gnsearch:`, `gaanasearch:`), song, album, playlist, and artist top tracks resolution with AES-128 stream decryption and YouTube Music fallback.
 - **Pandora**: Anonymous session handling with CSRF validation for search (`pdsearch:`) and tracks/playlists/stations, resolved seamlessly through mirroring.
+- **Qobuz**: Search (`qbsearch:`, `qbisrc:`, `qobuz:`), recommendations (`qbrec:`), tracks, albums, playlists, and artist top tracks resolution with dynamic web player credential extraction, signed direct streaming, and mirror fallback.
 - **YouTube Music First Mirroring**: Smart fallback resolver prioritizing `ytmsearch:` by ISRC and track title/author.
 - **Pre-Configured Hosting Bundle**: Includes a complete `lavalink/` folder with `Lavalink.jar` (v4.0.8), `plugins/all-in-one-1.0.5.jar`, startup scripts (`start.bat`, `start.sh`), and a ready-to-host `application.yml`.
 
@@ -91,14 +92,17 @@ plugins:
     audiomack: true
     gaana: true
     pandora: true
-    autoUpdate: true
-    repository: "Soya-Devss/all-in-one"
-    gitBranch: "main"
+    qobuz: true
 
     # Custom Gaana API & Proxy options
     gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
     gaanaProxy: "" # Optional proxy URL (e.g. http://host:port or http://user:pass@host:port)
     pandoraProxy: "" # Optional proxy URL
+
+    # Qobuz options (optional user token for direct stream, formatId: 5 = MP3 320kbps)
+    qobuzUserToken: ""
+    qobuzFormatId: "5"
+    qobuzProxy: "" # Optional proxy URL
 
     # Mirroring providers (executed in order when direct playback requires fallback)
     providers:
@@ -117,9 +121,10 @@ plugins:
 | `audiomack` | Boolean | `true` | Enables Audiomack search and URL resolution. |
 | `gaana` | Boolean | `true` | Enables Gaana search and URL resolution. |
 | `pandora` | Boolean | `true` | Enables Pandora search and URL resolution. |
-| `autoUpdate` | Boolean | `true` | Pulls Git updates and checks releases on startup. |
-| `repository` | String | `Soya-Devss/all-in-one` | GitHub repository slug used for release checks. |
-| `gitBranch` | String | `main` | Git branch to pull updates from when autoUpdate is enabled. |
+| `qobuz` | Boolean | `true` | Enables Qobuz search and URL resolution. |
+| `qobuzUserToken` | String | `""` | Optional Qobuz user auth token for high quality direct playback. |
+| `qobuzFormatId` | String | `"5"` | Qobuz stream format ID (`5` for 320kbps MP3). |
+| `qobuzProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Qobuz requests. |
 | `gaanaApiUrl` | String | `https://gaana-api-2.vercel.app/api` | Gaana API base URL. |
 | `gaanaProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Gaana requests. |
 | `pandoraProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Pandora requests. |
@@ -168,5 +173,13 @@ When hosting outside India (e.g. Canada, US, Europe), Gaana runs seamlessly:
 - **Station**: `https://www.pandora.com/station/<id>`
 - **Podcast**: `https://www.pandora.com/podcast/<id>`
 - **Artist**: `https://www.pandora.com/artist/<id>`
+
+### Qobuz
+- **Search**: `qbsearch:<query>`, `qbisrc:<isrc>`, or `qobuz:<query>`
+- **Recommendations**: `qbrec:<trackId>`
+- **Track**: `https://open.qobuz.com/track/<id>` or `https://play.qobuz.com/track/<id>`
+- **Album**: `https://open.qobuz.com/album/<id>` or `https://play.qobuz.com/album/<id>`
+- **Playlist**: `https://open.qobuz.com/playlist/<id>` or `https://play.qobuz.com/playlist/<id>`
+- **Artist**: `https://open.qobuz.com/artist/<id>` or `https://play.qobuz.com/artist/<id>`
 
 ---

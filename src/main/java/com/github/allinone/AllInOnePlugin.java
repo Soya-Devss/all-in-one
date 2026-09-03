@@ -3,6 +3,7 @@ package com.github.allinone;
 import com.github.allinone.sources.audiomack.AudiomackAudioSourceManager;
 import com.github.allinone.sources.gaana.GaanaAudioSourceManager;
 import com.github.allinone.sources.pandora.PandoraAudioSourceManager;
+import com.github.allinone.sources.qobuz.QobuzAudioSourceManager;
 import com.github.topi314.lavasearch.SearchManager;
 import com.github.topi314.lavasearch.api.SearchManagerConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
@@ -21,16 +22,16 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
     private AudiomackAudioSourceManager audiomack;
     private GaanaAudioSourceManager gaana;
     private PandoraAudioSourceManager pandora;
+    private QobuzAudioSourceManager qobuz;
 
     public AllInOnePlugin(AllInOneConfig config) {
         this.config = config;
         log.info("Initializing All-In-One Lavalink Plugin...");
 
-        if (config.isAutoUpdate()) {
-            Thread updateThread = new Thread(() -> UpdateService.checkAndUpdate(config), "AllInOne-AutoUpdate");
-            updateThread.setDaemon(true);
-            updateThread.start();
-        }
+        // Directly start auto-update check in the background
+        Thread updateThread = new Thread(() -> UpdateService.checkAndUpdate(config), "AllInOne-AutoUpdate");
+        updateThread.setDaemon(true);
+        updateThread.start();
     }
 
     @NotNull
@@ -59,6 +60,12 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
             manager.registerSourceManager(this.pandora);
         }
 
+        if (config.isQobuz()) {
+            log.info("Registering Qobuz audio source manager...");
+            this.qobuz = new QobuzAudioSourceManager(config, manager);
+            manager.registerSourceManager(this.qobuz);
+        }
+
         return manager;
     }
 
@@ -78,7 +85,11 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
         if (this.pandora != null) {
             manager.registerSearchManager(this.pandora);
         }
+        if (this.qobuz != null) {
+            manager.registerSearchManager(this.qobuz);
+        }
 
         return manager;
     }
 }
+

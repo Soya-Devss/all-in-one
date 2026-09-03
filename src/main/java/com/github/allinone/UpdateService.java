@@ -23,20 +23,36 @@ public class UpdateService {
     private static final Logger log = LoggerFactory.getLogger(UpdateService.class);
 
     public static void checkAndUpdate(AllInOneConfig config) {
-        if (!config.isAutoUpdate()) {
-            return;
+        String branch = config != null && config.getGitBranch() != null && !config.getGitBranch().isBlank()
+                ? config.getGitBranch()
+                : "main";
+        String repo = config != null && config.getRepository() != null && !config.getRepository().isBlank()
+                ? config.getRepository()
+                : "Soya-Devss/all-in-one";
+
+        if (!isGitAvailable()) {
+            log.info("Git is not installed or available on PATH. Skipping git auto-update.");
+        } else {
+            try {
+                pullGitRepository(branch);
+            } catch (Exception e) {
+                log.debug("Git pull check skipped: {}", e.getMessage());
+            }
         }
 
         try {
-            pullGitRepository(config.getGitBranch());
-        } catch (Exception e) {
-            log.debug("Git pull check skipped: {}", e.getMessage());
-        }
-
-        try {
-            checkGitHubRelease(config.getRepository());
+            checkGitHubRelease(repo);
         } catch (Exception e) {
             log.debug("Release check skipped: {}", e.getMessage());
+        }
+    }
+
+    public static boolean isGitAvailable() {
+        try {
+            Process process = new ProcessBuilder("git", "--version").start();
+            return process.waitFor() == 0;
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -53,6 +69,7 @@ public class UpdateService {
         }
 
         if (targetWorkingDir == null) {
+            log.debug("No .git directory found. Skipping git auto-update.");
             return;
         }
 

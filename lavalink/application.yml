@@ -40,15 +40,21 @@ lavalink:
 plugins:
   allinone:
     enabled: true
+    # Individual source toggles
     audiomack: true
     gaana: true
     pandora: true
-    autoUpdate: true
-    repository: "Soya-Devss/all-in-one"
-    gitBranch: "main"
+    qobuz: true
+
+    # Custom Gaana API & Proxy options
     gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
     gaanaProxy: "" # Optional proxy URL (e.g. http://host:port or http://user:pass@host:port)
     pandoraProxy: "" # Optional proxy URL
+
+    # Qobuz options (optional credentials for direct stream, formatId: 5 = MP3 320kbps)
+    qobuzUserToken: ""
+    qobuzFormatId: "5"
+    qobuzProxy: "" # Optional proxy URL
     providers:
       - "ytmsearch:\"%ISRC%\""
       - "ytmsearch:%QUERY%"
