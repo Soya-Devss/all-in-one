@@ -11,7 +11,7 @@ A comprehensive audio source plugin for **Lavalink v4**, porting high-performanc
 - **Pandora**: Anonymous session handling with CSRF validation for search (`pdsearch:`) and tracks/playlists/stations, resolved seamlessly through mirroring.
 - **Qobuz**: Search (`qbsearch:`, `qbisrc:`, `qobuz:`), recommendations (`qbrec:`), tracks, albums, playlists, and artist top tracks resolution with dynamic web player credential extraction, signed direct streaming, and mirror fallback.
 - **YouTube Music First Mirroring**: Smart fallback resolver prioritizing `ytmsearch:` by ISRC and track title/author.
-- **Pre-Configured Hosting Bundle**: Includes a complete `lavalink/` folder with `Lavalink.jar` (v4.0.8), `plugins/all-in-one-1.0.5.jar`, startup scripts (`start.bat`, `start.sh`), and a ready-to-host `application.yml`.
+- **Pre-Configured Hosting Bundle**: Includes a complete `lavalink/` folder with `Lavalink.jar` (v4.0.8), `plugins/all-in-one-1.0.6.jar`, startup scripts (`start.bat`, `start.sh`), and a ready-to-host `application.yml`.
 
 ---
 
@@ -46,7 +46,7 @@ cd all-in-one
 
 The compiled plugin will be located at:
 ```
-build/libs/all-in-one-1.0.5.jar
+build/libs/all-in-one-1.0.6.jar
 ```
 
 Copy this `.jar` into your Lavalink server's `plugins/` directory.
