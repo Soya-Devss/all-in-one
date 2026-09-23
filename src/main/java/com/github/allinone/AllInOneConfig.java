@@ -12,12 +12,15 @@ public class AllInOneConfig {
     private boolean gaana = true;
     private boolean pandora = true;
     private boolean qobuz = true;
+    private boolean amazonmusic = true;
     private boolean autoUpdate = true;
     private String repository = "Soya-Devss/all-in-one";
     private String gitBranch = "main";
     private String gaanaApiUrl = "https://gaana-api-2.vercel.app/api";
     private String gaanaProxy = null;
     private String pandoraProxy = null;
+    private String amazonMusicApiUrl = "";
+    private String amazonMusicProxy = null;
     private String qobuzUserToken = null;
     private String qobuzAppId = null;
     private String qobuzAppSecret = null;
@@ -73,6 +76,30 @@ public class AllInOneConfig {
 
     public void setQobuz(boolean qobuz) {
         this.qobuz = qobuz;
+    }
+
+    public boolean isAmazonmusic() {
+        return amazonmusic;
+    }
+
+    public void setAmazonmusic(boolean amazonmusic) {
+        this.amazonmusic = amazonmusic;
+    }
+
+    public String getAmazonMusicApiUrl() {
+        return amazonMusicApiUrl;
+    }
+
+    public void setAmazonMusicApiUrl(String amazonMusicApiUrl) {
+        this.amazonMusicApiUrl = amazonMusicApiUrl;
+    }
+
+    public String getAmazonMusicProxy() {
+        return amazonMusicProxy;
+    }
+
+    public void setAmazonMusicProxy(String amazonMusicProxy) {
+        this.amazonMusicProxy = amazonMusicProxy;
     }
 
     public String getQobuzUserToken() {

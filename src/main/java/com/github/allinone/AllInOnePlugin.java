@@ -1,5 +1,6 @@
 package com.github.allinone;
 
+import com.github.allinone.sources.amazonmusic.AmazonMusicAudioSourceManager;
 import com.github.allinone.sources.audiomack.AudiomackAudioSourceManager;
 import com.github.allinone.sources.gaana.GaanaAudioSourceManager;
 import com.github.allinone.sources.pandora.PandoraAudioSourceManager;
@@ -23,6 +24,7 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
     private GaanaAudioSourceManager gaana;
     private PandoraAudioSourceManager pandora;
     private QobuzAudioSourceManager qobuz;
+    private AmazonMusicAudioSourceManager amazonMusic;
 
     public AllInOnePlugin(AllInOneConfig config) {
         this.config = config;
@@ -66,6 +68,12 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
             manager.registerSourceManager(this.qobuz);
         }
 
+        if (config.isAmazonmusic()) {
+            log.info("Registering Amazon Music audio source manager...");
+            this.amazonMusic = new AmazonMusicAudioSourceManager(config, manager);
+            manager.registerSourceManager(this.amazonMusic);
+        }
+
         return manager;
     }
 
@@ -88,8 +96,10 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
         if (this.qobuz != null) {
             manager.registerSearchManager(this.qobuz);
         }
+        if (this.amazonMusic != null) {
+            manager.registerSearchManager(this.amazonMusic);
+        }
 
         return manager;
     }
 }
-

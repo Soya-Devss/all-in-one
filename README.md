@@ -1,17 +1,18 @@
 # All-In-One Lavalink Plugin
 
-A comprehensive audio source plugin for **Lavalink v4**, porting high-performance support for **Audiomack**, **Gaana**, **Pandora**, and **Qobuz** directly into your Lavalink node with built-in YouTube Music mirroring.
+A comprehensive audio source plugin for **Lavalink v4**, porting high-performance support for **Amazon Music**, **Audiomack**, **Gaana**, **Pandora**, and **Qobuz** directly into your Lavalink node with built-in YouTube Music mirroring.
 
 ---
 
 ## Features
 
+- **Amazon Music**: Full support for track ASIN / song URLs (`/tracks/`), albums (`/albums/`), artists (`/artists/`), playlists (`/playlists/`), and user community playlists (`/user-playlists/`), plus multi-prefix search (`azsearch:`, `amazonmusic:`, `amazonsearch:`) and LavaSearch.
 - **Audiomack**: Official API integration with OAuth 1.0 HMAC-SHA1 signing for search (`admsearch:`, `audiomack:`), song URLs, albums, and playlists. Direct stream playback with mirror fallback.
 - **Gaana**: Full search (`gnsearch:`, `gaanasearch:`), song, album, playlist, and artist top tracks resolution with AES-128 stream decryption and YouTube Music fallback.
 - **Pandora**: Anonymous session handling with CSRF validation for search (`pdsearch:`) and tracks/playlists/stations, resolved seamlessly through mirroring.
 - **Qobuz**: Search (`qbsearch:`, `qbisrc:`, `qobuz:`), recommendations (`qbrec:`), tracks, albums, playlists, and artist top tracks resolution with dynamic web player credential extraction, signed direct streaming, and mirror fallback.
 - **YouTube Music First Mirroring**: Smart fallback resolver prioritizing `ytmsearch:` by ISRC and track title/author.
-- **Pre-Configured Hosting Bundle**: Includes a complete `lavalink/` folder with `Lavalink.jar` (v4.0.8), `plugins/all-in-one-1.0.6.jar`, startup scripts (`start.bat`, `start.sh`), and a ready-to-host `application.yml`.
+- **Pre-Configured Hosting Bundle**: Includes a complete `lavalink/` folder with `Lavalink.jar` (v4.0.8), `plugins/all-in-one-1.0.7.jar`, startup scripts (`start.bat`, `start.sh`), and a ready-to-host `application.yml`.
 
 ---
 
@@ -46,7 +47,7 @@ cd all-in-one
 
 The compiled plugin will be located at:
 ```
-build/libs/all-in-one-1.0.6.jar
+build/libs/all-in-one-1.0.7.jar
 ```
 
 Copy this `.jar` into your Lavalink server's `plugins/` directory.
@@ -89,10 +90,15 @@ plugins:
     enabled: true
 
     # Individual source toggles
+    amazonmusic: true
     audiomack: true
     gaana: true
     pandora: true
     qobuz: true
+
+    # Custom Amazon Music API & Proxy options
+    amazonMusicApiUrl: "" # Set your Amazon Music API URL (e.g. http://localhost:3000/api or your hosted URL)
+    amazonMusicProxy: "" # Optional proxy URL
 
     # Custom Gaana API & Proxy options
     gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
@@ -118,6 +124,9 @@ plugins:
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `enabled` | Boolean | `true` | Enables or disables all sources registered by this plugin. |
+| `amazonmusic` | Boolean | `true` | Enables Amazon Music search and URL resolution. |
+| `amazonMusicApiUrl` | String | `""` | Amazon Music API base URL (e.g. `http://localhost:3000/api` or your hosted API). |
+| `amazonMusicProxy` | String | `""` | Optional HTTP/SOCKS5 proxy specifically for Amazon Music API requests. |
 | `audiomack` | Boolean | `true` | Enables Audiomack search and URL resolution. |
 | `gaana` | Boolean | `true` | Enables Gaana search and URL resolution. |
 | `pandora` | Boolean | `true` | Enables Pandora search and URL resolution. |
@@ -153,6 +162,14 @@ When hosting outside India (e.g. Canada, US, Europe), Gaana runs seamlessly:
 ---
 
 ## Supported Prefixes and URL Formats
+
+### Amazon Music
+- **Search**: `azsearch:<query>`, `amazonmusic:<query>`, or `amazonsearch:<query>`
+- **Track**: `https://music.amazon.com/tracks/<id>` or `https://music.amazon.com/albums/<albumId>?trackAsin=<trackAsin>`
+- **Album**: `https://music.amazon.com/albums/<id>`
+- **Artist**: `https://music.amazon.com/artists/<id>`
+- **Playlist**: `https://music.amazon.com/playlists/<id>`
+- **Community Playlist**: `https://music.amazon.com/user-playlists/<id>`
 
 ### Audiomack
 - **Search**: `admsearch:<query>` or `audiomack:<query>`

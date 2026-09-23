@@ -40,16 +40,19 @@ lavalink:
 plugins:
   allinone:
     enabled: true
-    # Individual source toggles
     audiomack: true
     gaana: true
     pandora: true
     qobuz: true
+    amazonmusic: true
 
-    # Custom Gaana API & Proxy options
     gaanaApiUrl: "https://gaana-api-2.vercel.app/api"
     gaanaProxy: "" # Optional proxy URL (e.g. http://host:port or http://user:pass@host:port)
     pandoraProxy: "" # Optional proxy URL
+
+    # Amazon Music API & Proxy options
+    amazonMusicApiUrl: "" # Set your Amazon Music API URL (e.g. http://localhost:3000/api or your hosted URL)
+    amazonMusicProxy: "" # Optional proxy URL
 
     # Qobuz options (optional credentials for direct stream, formatId: 5 = MP3 320kbps)
     qobuzUserToken: ""
