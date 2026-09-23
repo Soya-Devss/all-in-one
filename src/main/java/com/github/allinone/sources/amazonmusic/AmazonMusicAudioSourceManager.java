@@ -89,8 +89,14 @@ public class AmazonMusicAudioSourceManager implements MirroringAudioSourceManage
             return null;
         }
         url = url.trim();
-        if (url.endsWith("/")) {
+        while (url.endsWith("/")) {
             url = url.substring(0, url.length() - 1);
+        }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "https://" + url;
+        }
+        if (!url.endsWith("/api")) {
+            url = url + "/api";
         }
         return url;
     }
