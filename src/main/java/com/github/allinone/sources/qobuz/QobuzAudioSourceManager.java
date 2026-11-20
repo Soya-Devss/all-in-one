@@ -253,7 +253,7 @@ public class QobuzAudioSourceManager implements MirroringAudioSourceManager, Aud
         ensureCredentials();
         Map<String, String> params = new HashMap<>();
         params.put("query", query);
-        params.put("limit", "10");
+        params.put("limit", String.valueOf(config.getQobuzSearchLimit()));
         params.put("type", "tracks");
 
         JSONObject response = apiRequest("/catalog/search", params);
@@ -301,7 +301,14 @@ public class QobuzAudioSourceManager implements MirroringAudioSourceManager, Aud
             if (search != null && search.has("tracks")) {
                 JSONArray items = search.getJSONObject("tracks").optJSONArray("items");
                 if (items != null && !items.isEmpty()) {
-                    data = items.optJSONObject(0);
+                    // Only accept the search result when it actually matches the requested track ID
+                    for (int i = 0; i < items.length(); i++) {
+                        JSONObject item = items.optJSONObject(i);
+                        if (item != null && String.valueOf(item.opt("id")).equals(String.valueOf(id))) {
+                            data = item;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -330,12 +337,22 @@ public class QobuzAudioSourceManager implements MirroringAudioSourceManager, Aud
             if (search != null && search.has("albums")) {
                 JSONArray albums = search.getJSONObject("albums").optJSONArray("items");
                 if (albums != null && !albums.isEmpty()) {
-                    JSONObject album = albums.getJSONObject(0);
-                    String foundId = album.optString("id", String.valueOf(album.opt("qobuz_id")));
-                    params.clear();
-                    params.put("album_id", foundId);
-                    params.put("limit", String.valueOf(Math.min(max, 50)));
-                    data = apiRequest("/album/get", params);
+                    // Only accept the search result when it actually matches the requested album ID
+                    for (int i = 0; i < albums.length(); i++) {
+                        JSONObject album = albums.optJSONObject(i);
+                        if (album == null) {
+                            continue;
+                        }
+                        String foundId = String.valueOf(album.opt("id"));
+                        boolean matches = foundId.equals(String.valueOf(id)) || String.valueOf(album.optLong("qobuz_id")).equals(String.valueOf(id));
+                        if (matches) {
+                            params.clear();
+                            params.put("album_id", foundId);
+                            params.put("limit", String.valueOf(Math.min(max, 50)));
+                            data = apiRequest("/album/get", params);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -391,7 +408,39 @@ public class QobuzAudioSourceManager implements MirroringAudioSourceManager, Aud
         }
 
         String name = data.optString("name", "Unknown Playlist");
-        return new QobuzAudioPlaylist(name, tracks, tracks.isEmpty() ? null : tracks.get(0), false);
+        // Extended playlist metadata matching NodeLink:
+        // author = owner.name, artworkUrl = first playlist cover, totalTracks = capped real track count
+        JSONObject owner = data.optJSONObject("owner");
+        String author = owner != null && !owner.optString("name", "").isBlank() ? owner.optString("name").trim() : "";
+        String artworkUrl = getPlaylistCoverUrl(data);
+        long totalTracks = data.has("tracks_count")
+                ? data.optLong("tracks_count", tracks.size())
+                : tracksBlock.optLong("total", tracks.size());
+        totalTracks = Math.min(totalTracks, max);
+
+        return new QobuzAudioPlaylist(name, tracks, tracks.isEmpty() ? null : tracks.get(0), false,
+                "playlist", id, "https://open.qobuz.com/playlist/" + id, artworkUrl, author, totalTracks);
+    }
+
+    /**
+     * Picks the playlist cover image, mirroring NodeLink:
+     * Qobuz returns up to four track covers per playlist at several sizes;
+     * the first one at the largest available size is used.
+     */
+    private String getPlaylistCoverUrl(JSONObject playlist) {
+        for (String key : new String[]{"images300", "images150", "images"}) {
+            JSONArray images = playlist.optJSONArray(key);
+            if (images == null) {
+                continue;
+            }
+            for (int i = 0; i < images.length(); i++) {
+                String url = images.optString(i, null);
+                if (url != null && !url.isBlank()) {
+                    return url;
+                }
+            }
+        }
+        return null;
     }
 
     public AudioItem resolveArtist(String id) {
@@ -487,7 +536,8 @@ public class QobuzAudioSourceManager implements MirroringAudioSourceManager, Aud
                 }
             }
 
-            return new QobuzAudioPlaylist("Qobuz Recommendations", tracks, tracks.isEmpty() ? null : tracks.get(0), false);
+            return new QobuzAudioPlaylist("Qobuz Recommendations", tracks, tracks.isEmpty() ? null : tracks.get(0), false,
+                    "recommendations", null, null, null, null, (long) tracks.size());
         } catch (Exception e) {
             log.warn("Failed to fetch Qobuz recommendations for track {}: {}", id, e.getMessage());
             return AudioReference.NO_TRACK;

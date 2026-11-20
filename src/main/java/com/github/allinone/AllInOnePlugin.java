@@ -29,11 +29,6 @@ public class AllInOnePlugin implements AudioPlayerManagerConfiguration, SearchMa
     public AllInOnePlugin(AllInOneConfig config) {
         this.config = config;
         log.info("Initializing All-In-One Lavalink Plugin...");
-
-        // Directly start auto-update check in the background
-        Thread updateThread = new Thread(() -> UpdateService.checkAndUpdate(config), "AllInOne-AutoUpdate");
-        updateThread.setDaemon(true);
-        updateThread.start();
     }
 
     @NotNull

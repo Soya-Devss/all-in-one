@@ -5,6 +5,10 @@ server:
     enabled: false
 
 lavalink:
+  plugins:
+    - dependency: "com.github.Soya-Devss:all-in-one:1.1.0"
+      repository: "https://jitpack.io"
+      snapshot: false
   server:
     password: "youshallnotpass"
     sources:

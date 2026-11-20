@@ -12,11 +12,31 @@ public class QobuzAudioPlaylist implements AudioPlaylist {
     private final AudioTrack selectedTrack;
     private final boolean isSearchResult;
 
+    // Extended metadata (mirrors NodeLink playlist pluginInfo).
+    private final String playlistType;
+    private final String identifier;
+    private final String url;
+    private final String artworkUrl;
+    private final String author;
+    private final Long totalTracks;
+
     public QobuzAudioPlaylist(String name, List<AudioTrack> tracks, AudioTrack selectedTrack, boolean isSearchResult) {
+        this(name, tracks, selectedTrack, isSearchResult, null, null, null, null, null, null);
+    }
+
+    public QobuzAudioPlaylist(String name, List<AudioTrack> tracks, AudioTrack selectedTrack, boolean isSearchResult,
+                              String playlistType, String identifier, String url, String artworkUrl, String author,
+                              Long totalTracks) {
         this.name = name;
         this.tracks = tracks;
         this.selectedTrack = selectedTrack;
         this.isSearchResult = isSearchResult;
+        this.playlistType = playlistType;
+        this.identifier = identifier;
+        this.url = url;
+        this.artworkUrl = artworkUrl;
+        this.author = author;
+        this.totalTracks = totalTracks;
     }
 
     @Override
@@ -37,5 +57,29 @@ public class QobuzAudioPlaylist implements AudioPlaylist {
     @Override
     public boolean isSearchResult() {
         return isSearchResult;
+    }
+
+    public String getPlaylistType() {
+        return playlistType;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public String getArtworkUrl() {
+        return artworkUrl;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public Long getTotalTracks() {
+        return totalTracks;
     }
 }

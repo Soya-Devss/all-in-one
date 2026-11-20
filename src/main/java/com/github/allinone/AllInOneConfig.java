@@ -13,9 +13,6 @@ public class AllInOneConfig {
     private boolean pandora = true;
     private boolean qobuz = true;
     private boolean amazonmusic = true;
-    private boolean autoUpdate = true;
-    private String repository = "Soya-Devss/all-in-one";
-    private String gitBranch = "main";
     private String gaanaApiUrl = "https://gaana-api-2.vercel.app/api";
     private String gaanaProxy = null;
     private String pandoraProxy = null;
@@ -29,6 +26,7 @@ public class AllInOneConfig {
     private int qobuzPlaylistLimit = 100;
     private int qobuzAlbumLimit = 100;
     private int qobuzArtistLimit = 100;
+    private int qobuzSearchLimit = 10;
 
     private String[] providers = {
             "ytmsearch:\"%ISRC%\"",
@@ -105,7 +103,6 @@ public class AllInOneConfig {
     public String getQobuzUserToken() {
         return qobuzUserToken;
     }
-
     public void setQobuzUserToken(String qobuzUserToken) {
         this.qobuzUserToken = qobuzUserToken;
     }
@@ -166,28 +163,12 @@ public class AllInOneConfig {
         this.qobuzArtistLimit = qobuzArtistLimit;
     }
 
-    public boolean isAutoUpdate() {
-        return autoUpdate;
+    public int getQobuzSearchLimit() {
+        return qobuzSearchLimit;
     }
 
-    public void setAutoUpdate(boolean autoUpdate) {
-        this.autoUpdate = autoUpdate;
-    }
-
-    public String getRepository() {
-        return repository;
-    }
-
-    public void setRepository(String repository) {
-        this.repository = repository;
-    }
-
-    public String getGitBranch() {
-        return gitBranch;
-    }
-
-    public void setGitBranch(String gitBranch) {
-        this.gitBranch = gitBranch;
+    public void setQobuzSearchLimit(int qobuzSearchLimit) {
+        this.qobuzSearchLimit = qobuzSearchLimit;
     }
 
     public String getGaanaApiUrl() {

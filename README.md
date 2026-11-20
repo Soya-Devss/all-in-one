@@ -35,7 +35,25 @@ chmod +x start.sh
 
 ---
 
-## Building from Source
+## Installation
+
+### Option 1: Automatic Download via Lavalink Plugins (Recommended)
+
+Add the plugin to your Lavalink `application.yml` under `lavalink.plugins`:
+
+```yaml
+lavalink:
+  plugins:
+    - dependency: "com.github.Soya-Devss:all-in-one:1.1.0"
+      repository: "https://jitpack.io"
+      snapshot: false
+```
+
+> **Note:** Replace `1.1.0` with the version / tag (e.g. `1.1.0` or git commit) you want to use. When you update the version in `application.yml`, Lavalink will automatically download the new version on restart.
+
+---
+
+### Option 2: Pre-compiled JAR or Building from Source
 
 To compile the plugin JAR from source:
 
@@ -45,11 +63,7 @@ cd all-in-one
 ./gradlew build
 ```
 
-The compiled plugin will be located at:
-```
-build/libs/all-in-one-1.1.0.jar
-```
-
+The compiled plugin will be located at `build/libs/all-in-one-<version>.jar`.
 Copy this `.jar` into your Lavalink server's `plugins/` directory.
 
 ---
